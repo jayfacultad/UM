@@ -90,21 +90,14 @@ Um_instruction output(Um_register c)
 
 Um_instruction three_register(Um_opcode op, int ra, int rb, int rc)
 {
-        Um_instruction instruction;
+        Um_instruction instruction = 0;
 
         assert(ra > 0 || ra < 7 || rb > 0 || rb < 7 || rc > 0 || rc < 7); 
 
-        Bitpack_newu(uint64_t instruction, unsigned 4, unsigned 28, 
-                      uint64_t op);
-
-        Bitpack_newu(uint64_t instruction, unsigned 3, unsigned 6, 
-                      uint64_t ra);
-
-        Bitpack_newu(uint64_t instruction, unsigned 3, unsigned 3, 
-                      uint64_t rb);
-
-        Bitpack_newu(uint64_t instruction, unsigned 3, unsigned 0, 
-                      uint64_t rc);
+        instruction = Bitpack_newu(instruction, 4, 28, op);
+        instruction = Bitpack_newu(instruction, 3, 6, ra);
+        instruction = Bitpack_newu(instruction, 3, 3, rb);
+        instruction = Bitpack_newu(instruction, 3, 0, rc);
 
         return instruction;
 }
@@ -113,12 +106,12 @@ extern void Um_write_sequence(FILE *output, Seq_T stream)
 {
         while(Seq_length(stream)) {
                 void *word = Seq_remhi(stream);
-                Um_instruction extracted_word = (void *)(Um_instruction)word;
+                Um_instruction * extracted_word = word;
 
-                int byte_1 = Bitpack_getu(extracted_word, 8, 24);
-                int byte_2 = Bitpack_getu(extracted_word, 8, 16);
-                int byte_3 = Bitpack_getu(extracted_word, 8, 8);
-                int byte_4 = Bitpack_getu(extracted_word, 8, 0);
+                int byte_1 = Bitpack_getu(*extracted_word, 8, 24);
+                int byte_2 = Bitpack_getu(*extracted_word, 8, 16);
+                int byte_3 = Bitpack_getu(*extracted_word, 8, 8);
+                int byte_4 = Bitpack_getu(*extracted_word, 8, 0);
 
                 putc(byte_1, output);
                 putc(byte_2, output);
