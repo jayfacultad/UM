@@ -94,10 +94,10 @@ Um_instruction three_register(Um_opcode op, int ra, int rb, int rc)
 
         assert(ra > 0 || ra < 7 || rb > 0 || rb < 7 || rc > 0 || rc < 7); 
 
-        Um_instruction instruction = Bitpack_newu(instruction, 4, 28, op);
-        Um_instruction instruction = Bitpack_newu(instruction, 3, 6, ra);
-        Um_instruction instruction = Bitpack_newu(instruction, 3, 3, rb);
-        Um_instruction instruction = Bitpack_newu(instruction, 3, 0, rc);
+        instruction = Bitpack_newu(instruction, 4, 28, op);
+        instruction = Bitpack_newu(instruction, 3, 6, ra);
+        instruction = Bitpack_newu(instruction, 3, 3, rb);
+        instruction = Bitpack_newu(instruction, 3, 0, rc);
 
         return instruction;
 }
