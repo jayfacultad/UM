@@ -22,13 +22,18 @@ const int byte_len = 8;
 //         }
 // }
 
+void conditional_move(uint32_t (*$r)[], short a, short b, short c);
+void segmented_load(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
+void segmented_store(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
+
 
 int main (int argc, char *argv[])
 {
         FILE * fp;
         uint32_t $r[8];                 // Registers
-        Seg_T $m = Seg_new(1000);       // Segments
+        Seg_T $m = Seg_new(1000);       // Sequence of segments
         Seg_T stack = Seg_new(1);       // Stack of unmapped segments
+        uint32_t * program_counter;     // Program Counter
 
         if (argc == 2) {
                 fp = fopen(argv[1], "r");
@@ -42,7 +47,7 @@ int main (int argc, char *argv[])
         struct stat st;
         stat(argv[1], &st);
         int file_size = st.st_size;
-        int num_words = file_size / (sizeof(uint32_t)); // File size impacted by spaces
+        int num_words = file_size / (sizeof(uint32_t)); 
         fprintf(stderr, "File size: %d\n", file_size);
         fprintf(stderr, "Number of words: %d\n", num_words);
         // int file_size = fstat(fd, st);
@@ -53,25 +58,93 @@ int main (int argc, char *argv[])
         int offset = 0;
         for (int j = 0; j < num_words; j++) {
                 uint32_t word = 0;
-                for (int i = 0; i < 4; i++) { // To disregard the space character
+                for (int i = 0; i < 4; i++) { 
                         char extract_byte = (uint8_t)getc(fp);
-                        if (i < 4) {
-                                word = Bitpack_news(word, byte_len, (24 - (byte_len  * i)), extract_byte);
-                                fprintf(stderr, "%x\n", extract_byte);    
-                        }
-                        // NOTE: spaces are printed as hex 20
-                        
+                        word = Bitpack_news(word, byte_len, (24 - (byte_len  * i)), extract_byte);             
                 }
-                printf("Word: %x\n", word);
+                printf("%x\n", word);
                 arr[offset++] = word;
         }
         Seg_put($m, 0, arr);
 
         /* Testing extraction of value in segments structure */
-        uint32_t (*temp)[num_words] = Seg_get($m, 0);
-        // printf("%c\n", *temp[0]);
+        // uint32_t (*temp)[num_words] = Seg_get($m, 0);
+        // printf("%x\n", (*temp)[0]);
+        // printf("%x\n", (*temp)[1]);
         // printf("\n");
-        (void)temp;
+
+        program_counter = Seg_get($m, 0);
+
+        do {
+                uint32_t instruction = *program_counter;
+
+                // Extract op code
+                short op_code = Bitpack_getu(instruction, 4, 28);
+                short a = Bitpack_getu(instruction, 3, 6);
+                short b = Bitpack_getu(instruction, 3, 3);
+                short c = Bitpack_getu(instruction, 3, 0);
+
+                switch (op_code) {
+                        case 0: conditional_move(&$r, a, b, c);
+                                break;
+                        case 1: segmented_load(&$r, &$m, num_words, a, b, c);
+                                break;
+                        case 2: segmented_store(&$r, &$m, num_words, a, b, c);
+                                break;
+                        case 3: // do something
+                                break;
+                        case 4: // do something
+                                break;   
+                        case 5: // do something
+                                break;
+                        case 6: // do something
+                                break;     
+                        case 7: // do something
+                                break;     
+                        case 8: // do something
+                                break;     
+                        case 9: // do something
+                                break;     
+                        case 10: // do something
+                                break;     
+                        case 11: // do something
+                                break;     
+                        case 12: // do something
+                                break;     
+                        case 13: // do something
+                                break;              
+                        default: // do something
+                                return EXIT_FAILURE;
+                }
+
+                program_counter += byte_len;
+
+        } while (1);
+
         (void)$r;
         (void)fd;
 }
+
+
+void conditional_move(uint32_t (*$r)[], short a, short b, short c)
+{
+        if ((*$r)[c] != 0) {
+                (*$r)[a] = (*$r)[b];
+        }
+}
+
+void segmented_load(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c)
+{
+        int32_t (*temp)[num_words] = Seg_get(*$m, (*$r)[b]);
+        (*$r)[a] = (*temp)[c];
+}
+
+void segmented_store(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c)
+{
+        int32_t (*temp)[num_words] = Seg_get(*$m, (*$r)[a]);
+        int index = (*$r)[b];
+        (*temp)[index] = (*$r)[c]; // TO DO: check if this works
+
+}
+
+
