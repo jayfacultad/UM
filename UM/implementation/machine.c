@@ -25,6 +25,17 @@ const int byte_len = 8;
 void conditional_move(uint32_t (*$r)[], short a, short b, short c);
 void segmented_load(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
 void segmented_store(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
+void addition(uint32_t (*$r)[], short a, short b, short c);
+void multiplication(uint32_t (*$r)[], short a, short b, short c);
+void division(uint32_t (*$r)[], short a, short b, short c);
+void bitwise_nand(uint32_t (*$r)[], short a, short b, short c);
+void halt(uint32_t (*$r)[], short a, short b, short c);
+void map_segment(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
+void umap_segment(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
+void output(uint32_t (*$r)[], short a, short b, short c);
+void input(uint32_t (*$r)[], short a, short b, short c);
+void load_program(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
+void load_value((*$r)[], short a);
 
 
 int main (int argc, char *argv[])
@@ -144,7 +155,61 @@ void segmented_store(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short 
         int32_t (*temp)[num_words] = Seg_get(*$m, (*$r)[a]);
         int index = (*$r)[b];
         (*temp)[index] = (*$r)[c]; // TO DO: check if this works
+}
 
+void addition(uint32_t (*$r)[], short a, short b, short c)
+{
+
+}
+
+void multiplication(uint32_t (*$r)[], short a, short b, short c)
+{
+
+}
+
+void division(uint32_t (*$r)[], short a, short b, short c)
+{
+
+}
+
+void bitwise_nand(uint32_t (*$r)[], short a, short b, short c)
+{
+
+}
+
+void halt(uint32_t (*$r)[], short a, short b, short c)
+{
+
+}
+
+void map_segment(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c) 
+{
+
+}
+
+void umap_segment(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c)
+{
+
+}
+
+void output(uint32_t (*$r)[], short a, short b, short c)
+{
+
+}
+
+void input(uint32_t (*$r)[], short a, short b, short c)
+{
+
+}
+
+void load_program(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c)
+{
+
+}
+
+void load_value((*$r)[], short a)
+{
+        
 }
 
 

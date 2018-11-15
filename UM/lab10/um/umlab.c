@@ -139,6 +139,8 @@ extern void Um_write_sequence(FILE *output, Seq_T stream)
                 putc(byte_2, output);
                 putc(byte_3, output);
                 putc(byte_4, output);
+
+                fprintf(stderr, "word: %x %x %x %x\n", byte_1, byte_2, byte_3, byte_4);
         }
 }
 

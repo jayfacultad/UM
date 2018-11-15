@@ -25,7 +25,7 @@ static struct test_info {
         void (*emit_test)(Seq_T stream);
 } tests[] = {
         { "halt",         NULL, "", emit_halt_test },
-        { "halt-verbose", NULL, "", emit_verbose_halt_test },
+        { "verbose-halt", NULL, "", emit_verbose_halt_test },
         { "add",          NULL, "", emit_add_test },
         { "print-six",    NULL, "", emit_printsix_test}
 };
