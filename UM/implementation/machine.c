@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <assert.h>
 
 #define Seq_T Seg_T
 
@@ -42,8 +43,8 @@ int main (int argc, char *argv[])
 {
         FILE * fp;
         uint32_t $r[8];                 // Registers
-        Seg_T $m = Seg_new(1000);       // Sequence of segments
-        Seg_T stack = Seg_new(1);       // Stack of unmapped segments
+        Seg_T $m = Seg_new(1000);        // Sequence of segments
+        Seg_T stack = Seg_new(10);     // Stack of unmapped segments
         uint32_t * program_counter;     // Program Counter
 
         if (argc == 2) {
@@ -70,12 +71,14 @@ int main (int argc, char *argv[])
                 uint32_t word = 0;
                 for (int j = 0; j < 4; j++) { 
                         char extract_byte = (uint8_t)getc(fp);
-                        word = Bitpack_news(word, byte_len, (24 - (byte_len  * i)), extract_byte);             
+                        word = Bitpack_newu(word, byte_len, (24 - (byte_len  * j)), extract_byte);             
                 }
                 printf("%x\n", word);
                 arr[offset++] = word;
         }
         Seg_put($m, 0, arr);
+
+        return EXIT_SUCCESS;
 
         /* Testing extraction of value in segments structure */
         // uint32_t (*temp)[num_words] = Seg_get($m, 0);
@@ -93,6 +96,8 @@ int main (int argc, char *argv[])
                 short a = Bitpack_getu(instruction, 3, 6);
                 short b = Bitpack_getu(instruction, 3, 3);
                 short c = Bitpack_getu(instruction, 3, 0);
+
+                assert(op_code >= 0 && op_code < 14 && a >= 0 && a < 8 && b >= 0 && b < 8 && c >= 0 && c < 8);
 
                 switch (op_code) {
                         case 0: conditional_move(&$r, a, b, c);
@@ -123,8 +128,6 @@ int main (int argc, char *argv[])
                                 break;     
                         case 13: load_value(&$r, a);
                                 break;              
-                        default: fprintf(stderr, "Error: Unknown Instruction.\n");
-                                return EXIT_FAILURE;
                 }
 
                 program_counter += byte_len;
@@ -133,6 +136,8 @@ int main (int argc, char *argv[])
 
         (void)$r;
         (void)fd;
+
+        return EXIT_SUCCESS;
 }
 
 
@@ -158,6 +163,8 @@ void segmented_store(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short 
 
 void addition(uint32_t (*$r)[], short a, short b, short c)
 {
+
+
         (void)$r;
         (void)a;
         (void)b;
@@ -166,6 +173,8 @@ void addition(uint32_t (*$r)[], short a, short b, short c)
 
 void multiplication(uint32_t (*$r)[], short a, short b, short c)
 {
+
+
         (void)$r;
         (void)a;
         (void)b;
@@ -174,6 +183,8 @@ void multiplication(uint32_t (*$r)[], short a, short b, short c)
 
 void division(uint32_t (*$r)[], short a, short b, short c)
 {
+
+
         (void)$r;
         (void)a;
         (void)b;
@@ -182,6 +193,8 @@ void division(uint32_t (*$r)[], short a, short b, short c)
 
 void bitwise_nand(uint32_t (*$r)[], short a, short b, short c)
 {
+
+
         (void)$r;
         (void)a;
         (void)b;
@@ -190,6 +203,8 @@ void bitwise_nand(uint32_t (*$r)[], short a, short b, short c)
 
 void halt(uint32_t (*$r)[], short a, short b, short c)
 {
+
+
         (void)$r;
         (void)a;
         (void)b;
@@ -198,6 +213,8 @@ void halt(uint32_t (*$r)[], short a, short b, short c)
 
 void map_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c) 
 {
+
+
         (void)$r;
         (void)$m;
         (void)stack;
@@ -209,6 +226,8 @@ void map_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short
 
 void umap_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c)
 {
+
+
         (void)$r;
         (void)$m;
         (void)stack;
@@ -220,6 +239,8 @@ void umap_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, shor
 
 void output(uint32_t (*$r)[], short a, short b, short c)
 {
+
+
         (void)$r;
         (void)a;
         (void)b;
@@ -228,6 +249,8 @@ void output(uint32_t (*$r)[], short a, short b, short c)
 
 void input(uint32_t (*$r)[], short a, short b, short c)
 {
+
+
         (void)$r;
         (void)a;
         (void)b;
@@ -236,6 +259,8 @@ void input(uint32_t (*$r)[], short a, short b, short c)
 
 void load_program(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c)
 {
+
+
         (void)$r;
         (void)$m;
         (void)num_words;
@@ -246,6 +271,8 @@ void load_program(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, 
 
 void load_value(uint32_t (*$r)[], short a)
 {
+
+
         (void)$r;
         (void)a;
 }
