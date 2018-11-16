@@ -30,7 +30,7 @@ void addition(uint32_t (*$r)[], short a, short b, short c);
 void multiplication(uint32_t (*$r)[], short a, short b, short c);
 void division(uint32_t (*$r)[], short a, short b, short c);
 void bitwise_nand(uint32_t (*$r)[], short a, short b, short c);
-void halt(uint32_t (*$r)[], short a, short b, short c);
+void halt();
 void map_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c);
 void umap_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c);
 void output(uint32_t (*$r)[], short a, short b, short c);
@@ -180,7 +180,7 @@ int main (int argc, char *argv[])
                                 break;
                         case 6: bitwise_nand(&$r, a, b, c);
                                 break;     
-                        case 7: halt(&$r, a, b, c);
+                        case 7: halt();
                                 break;     
                         case 8: map_segment(&$r, &$m, &stack, num_words, a, b, c);
                                 break;     
@@ -190,9 +190,9 @@ int main (int argc, char *argv[])
                                 break;     
                         case 11: input(&$r, a, b, c);
                                 break;     
-                        case 12: load_program(&$r, &$m, num_words, a, b, c);
+                        case 12: load_program(&$r, &$m, num_words, a, b, c, program_counter);
                                 break;     
-                        case 13: load_value(&$r, a, word);
+                        case 13: load_value(&$r, a, instruction);
                                 break;              
                 }
 
@@ -251,48 +251,71 @@ void bitwise_nand(uint32_t (*$r)[], short a, short b, short c)
         (*$r)[a] = ~((*$r)[b] & (*$r)[c]);
 }
 
-void halt(uint32_t (*$r)[], short a, short b, short c)
+void halt()
 {
         exit(0);
 }
 
 void map_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c) 
 {
-        uint32_t size = $r[c];
+        uint32_t size = (*$r)[c];
         uint32_t arr[size] = { 0 };
-        Seg_map(seg, stack, &arr);
+        Seg_map(&$m, stack, &arr);
+
+        (void)num_words;
+        (void)a;
+        (void)b;
 }
 
 void umap_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c)
 {
-        Seg_unmapp(seg, stack, &$r[c]);
+        Seg_unmapp($m, stack, (*$r)[c]);
+
+        (void)$r;
+        (void)num_words;
+        (void)a;
+        (void)b;
 }
 
 void output(uint32_t (*$r)[], short a, short b, short c)
 {
-        assert($r[c] >=0 && $r[c] <= 255);
-        putchar($r[c]);
+        assert((*$r)[c] <= 255);
+        putchar((*$r)[c]);
+
+        (void)a;
+        (void)b;
 }
 
 void input(uint32_t (*$r)[], short a, short b, short c)
 {
         // ASK TA about this
         char extract_byte = getchar();
+
+        (void)$r;
+        (void)a;
+        (void)b;
+        (void)c;
 }
 
 void load_program(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c, uint32_t * program_counter)
 {
-        if((*$r[b]) != 0) {
+        if((*$r)[b] != 0) {
                 int size = sizeof(*(uint32_t (*)[])Seg_get($m, (*$r)[b]))/sizeof(uint32_t);
-                uint32_t (duplicate)[size] = *(uint32_t (*)[])Seg_get($m, (*$r)[b]);   
+                uint32_t duplicate[size] = *(uint32_t (*)[])Seg_get($m, (*$r)[b]);
+                *(uint32_t (*)[])Seg_get($m, 0)  = duplicate;
         }      
         program_counter = (*(uint32_t (*)[])Seg_get($m, 0))[(*$r)[c]];
+
+        (void)a;
+        (void)c;
+        (void)num_words;
+        (void)program_counter;
 
 }
 
 void load_value(uint32_t (*$r)[], short a, uint32_t word)
 {
-        &$r[a] = Bitpack_getu(word, 25, 0);
+        (*$r)[a] = Bitpack_getu(word, 25, 0);
 }
 
 
