@@ -1,23 +1,18 @@
 #
-# Makefile 
+# Makefile for the Profile lab
 # 
 CC = gcc
 
-
-IFLAGS  = -I/comp/40/include -I/usr/sup/cii40/include/cii -I/comp/40/public_html/solutions/bitpack.h 
+IFLAGS  = -I/comp/40/include -I/usr/sup/cii40/include/cii
 CFLAGS  = -g -std=gnu99 -Wall -Wextra -Werror -pedantic $(IFLAGS)
 LDFLAGS = -g -L/comp/40/lib64 -L/usr/sup/cii40/lib64
-LDLIBS  = -l40locality -lm -lcii40
+LDLIBS  = -lpnmrdr -lcii40-O2 -lm
 
-
-EXECS   = um
+EXECS   = unblackedges
 
 all: $(EXECS)
 
-um: machine.o segments.o bitpack.o
-	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
-
-maketest: create.o bitpack.o
+unblackedges: unblackmain.o pbmio.o unblackedges-lab.o bit2.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
 # To get *any* .o file, compile its .c file with the following rule.
@@ -26,3 +21,4 @@ maketest: create.o bitpack.o
 
 clean:
 	rm -f $(EXECS)  *.o
+

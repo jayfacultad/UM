@@ -1,0 +1,42 @@
+UNBLACKEDGES
+
+Jay Facultad
+Nathan Sahelijo
+COMP40 / F2018
+Lab 11: Profiling Tools
+
+Please put answers to questions here.
+
+  * What fraction of time is spent in I/O as compared with removing
+    black edges? 
+
+        42.89% for remove_black_edges
+        14.19% for putc and read_raw_bit
+  
+  * How long does
+  
+       time ./unblackedges 
+  
+    take?
+
+        0.72 seconds for user time
+        0.83 seconds for elapsed
+  
+  * After making changes requested in the lab handout (steps 1-4), what
+    happened to the total time?
+
+        The changes reduced user time to 0.70 seconds
+        The changes reduced elapsed to 0.74 seconds
+  
+  * What happened to the fraction of time spent in Bit_put?
+
+        Original Bit_put was 16.85%
+        Optimized Bit_put is 16.9%
+  
+  * Since the implementation of Bit_put has not been improved, what has
+    changed?
+  
+        The system time was reduced from 0.01 seconds to 0.00 seconds. 
+        This system time involves I/O, where most of the program's time is 
+        spent.  A small improvement in the system time yields a significant
+        improvement in the overall program time.
