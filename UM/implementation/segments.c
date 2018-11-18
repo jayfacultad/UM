@@ -10,24 +10,24 @@ T Seg_new(int hint)
         return (T) Seq_new(hint);
 }
 
-void *Seg_addlo(T seq, void *x)
+void *Seg_addlo(T seg, void *x)
 {
-        return Seq_addlo((Seq_T) seq, x);
+        return Seq_addlo((Seq_T) seg, x);
 }
 
-void *Seg_addhi(T seq, void *x)
+void *Seg_addhi(T seg, void *x)
 {
-        return Seq_addhi((Seq_T) seq, x);
+        return Seq_addhi((Seq_T) seg, x);
 }
 
-void *Seg_remhi(T seq)
+void *Seg_remhi(T seg)
 {
-        return Seq_remhi((Seq_T) seq);
+        return Seq_remhi((Seq_T) seg);
 }
 
-void *Seg_remlo(T seq)
+void *Seg_remlo(T seg)
 {
-        return Seq_remlo((Seq_T) seq);
+        return Seq_remlo((Seq_T) seg);
 }
 
 void *Seg_get(T seg, int i)
@@ -40,9 +40,9 @@ void *Seg_put(T seg, int i, void *x)
         return Seq_put((Seq_T) seg, i, x);
 }
 
-void Seg_free(T *seg)
+void Seg_free(T seg)
 {
-        Seq_free((Seq_T *) seg);
+        Seq_free((Seq_T *)(seg));
 }
 
 int Seg_length(T seg)
@@ -57,10 +57,9 @@ int Seg_size(T seg, int i)
         return 10;
 }
 
-void Seg_unmapp(T seg, T unmapped, int i)
+void Seg_unmapp(T seg, int i)
 {
         Seg_put(seg, i, NULL);
-        Seg_addhi(unmapped, &i);
 }
 
 void Seg_map(T seg, T unmapped, void *x)

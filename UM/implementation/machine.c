@@ -10,42 +10,36 @@
 #include <unistd.h>
 #include <assert.h>
 
+#include "uarray.h"
+
 #define Seq_T Seg_T
+
+#define UArray_put(uarray, index, value) (uint32_t *word = UArray_at(uarray, index); *word = value;)
 
 const int byte_len = 8;
 
-// void Bitpack_printu(uint32_t word)
-// {
-//         uint32_t mask = Bitpack_mask(1, TYPE_SIZE - 1);
-//         for(int i - TYPE_SIZE; i >o; i--) {
-
-
-//         }
-// }
-
 void conditional_move(uint32_t (*$r)[], short a, short b, short c);
-void segmented_load(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
-void segmented_store(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c);
+void segmented_load(uint32_t (*$r)[], Seg_T $m, short a, short b, short c);
+void segmented_store(uint32_t (*$r)[], Seg_T $m, short a, short b, short c);
 void addition(uint32_t (*$r)[], short a, short b, short c);
 void multiplication(uint32_t (*$r)[], short a, short b, short c);
 void division(uint32_t (*$r)[], short a, short b, short c);
 void bitwise_nand(uint32_t (*$r)[], short a, short b, short c);
 void halt();
-void map_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c);
-void umap_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c);
-void output(uint32_t (*$r)[], short a, short b, short c);
-void input(uint32_t (*$r)[], short a, short b, short c);
-void load_program(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c, uint32_t * program_counter);
-void load_value(uint32_t (*$r)[], short a, uint32_t word);
+void map_segment(uint32_t (*$r)[], Seg_T $m, short b, short c);
+void umap_segment(uint32_t (*$r)[], Seg_T $m, short c);
+void output(uint32_t (*$r)[], short c);
+void input(uint32_t (*$r)[], short c);
+void load_program(uint32_t (*$r)[], Seg_T $m, int num_words, short a, short b, short c, uint32_t * program_counter);
+void load_value(uint32_t (*$r)[], short a, uint32_t value);
 
 
 int main (int argc, char *argv[])
 {
         FILE * fp;
-        uint32_t $r[8];                 // Registers
-        Seg_T $m = Seg_new(1000);        // Sequence of segments
-        Seg_T stack = Seg_new(10);     // Stack of unmapped segments
-        uint32_t * program_counter;     // Program Counter
+        uint32_t $r[8];                // Registers
+        Seg_T $m = Seg_new(1000);      // Sequence of segments
+        uint32_t *program_counter;     // Program Counter
 
         if (argc == 2) {
                 fp = fopen(argv[1], "r");
@@ -54,123 +48,59 @@ int main (int argc, char *argv[])
                 fprintf(stderr, "Need one file for input");
         }
 
-        // Determine size of file
         int fd = fileno(fp);
         struct stat st;
         stat(argv[1], &st);
         int file_size = st.st_size;
         int num_words = file_size / (sizeof(uint32_t)); 
-        fprintf(stderr, "File size: %d\n", file_size);
-        fprintf(stderr, "Number of words: %d\n", num_words);
 
         // Create and load Segment 0 with every instruction
-        uint32_t arr[num_words];
-        Seg_map($m, stack, arr);        
+        UArray_T arr = UArray_new(num_words, sizeof(uint32_t));
+        Seg_addhi($m, &arr);
+        
         int offset = 0;
         for (int i = 0; i < num_words; i++) {
                 uint32_t word = 0;
                 for (int j = 0; j < 4; j++) { 
-                        char extract_byte = (uint8_t)getc(fp);
-                        word = Bitpack_newu(word, byte_len, (24 - (byte_len  * j)), extract_byte);             
+                        uint32_t extract_byte = (uint32_t)getc(fp);
+                        word = Bitpack_newu(word, byte_len, 24 - (byte_len  * j), extract_byte);             
                 }
-                printf("%x\n", word);
-                arr[offset++] = word;
+                // printf("%x\n", word);
+                uint32_t *value = UArray_at(arr, offset++);
+                *value = word;
         }
         Seg_put($m, 0, &arr);
-
-        // DO NOT DELETE TEST CASES - NEED TO SUBMIT WITH ASSIGNMENT
-        // Test Segmented Load
-        // uint32_t testarray[1] = { 500 };
-        // Seg_addhi($m, &testarray);
-        // $r[0] = 0;
-        // $r[1] = 1;
-        // $r[2] = 0;
-        // segmented_load(&$r, &$m, num_words, 0, 1, 2);
-        // uint32_t (*temp1)[1] = Seg_get($m, 1);
-        // printf("Test segmented load: %d\n", (*temp1)[0]);
-
-        // Test Conditional Move
-        // $r[0] = 5;
-        // $r[1] = 10;
-        // $r[2] = 0;
-        // conditional_move(&$r, 0, 1, 2);
-        // printf("Test conditional move (c = 0): %d %d %d\n", $r[0], $r[1], $r[2]);
-        // $r[0] = 5;
-        // $r[1] = 10;
-        // $r[2] = 1;
-        // conditional_move(&$r, 0, 1, 2);
-        // printf("Test conditional move (c != 0): %d %d %d\n", $r[0], $r[1], $r[2]);
-
-        // Test Segmented Store
-        // uint32_t testarray[1] = { 1 };
-        // Seg_addhi($m, &testarray);
-        // $r[0] = 1;
-        // $r[1] = 0;
-        // $r[2] = 0;
-        // segmented_load(&$r, &$m, num_words, 0, 1, 2);
-        // $r[3] = 1;
-        // $r[4] = 0;
-        // $r[5] = 500;
-        // segmented_store(&$r, &$m, num_words, 3, 4, 5);
-        // uint32_t (*temp1)[1] = Seg_get($m, 1);
-        // printf("Test segmented load: %d\n", (*temp1)[0]);
-
-        // Test Addition
-        // $r[0] = 0;
-        // $r[1] = 2147483647;
-        // $r[2] = 1;
-        // addition(&$r, 0, 1, 2);
-        // printf("Test addition: %d\n", $r[0]);        
-
-        // Test Multiplication
-        // $r[0] = 0;
-        // $r[1] = 2;
-        // $r[2] = 8;
-        // multiplication(&$r, 0, 1, 2);
-        // printf("Test addition: %d\n", $r[0]);  
-
-        // Test Division
-        // $r[0] = 0;
-        // $r[1] = 3;
-        // $r[2] = 2;
-        // division(&$r, 0, 1, 2);
-        // printf("Test addition: %d\n", $r[0]); 
-
-        // Test Bitwise NAND
-        // $r[0] = 0;
-        // $r[1] = 7;
-        // $r[2] = 7;
-        // bitwise_nand(&$r, 0, 1, 2);
-        // printf("Test addition: %u\n", $r[0]); 
+        //        fprintf(stdout, "%x\n", *(uint32_t*)UArray_at(*(UArray_T *)Seg_get($m, 0),0));
+        fclose(fp);
 
 
-        /* Testing extraction of value in segments structure */
-        // uint32_t (*temp)[num_words] = Seg_get($m, 0);
-        // printf("%x\n", (*temp)[0]);
-        // printf("%x\n", (*temp)[1]);
-        // printf("\n");
-
-        return EXIT_SUCCESS;
-
-        program_counter = Seg_get($m, 0);
-
+        int x = 0;
+        program_counter = (uint32_t *)UArray_at(*(UArray_T*)Seg_get($m, 0), 0);
+                //(uint32_t *)UArray_at(*(UArray_T*)Seg_get($m, 0), 0);
+        short op_code;
         do {
                 uint32_t instruction = *program_counter;
 
-                // Extract op code
-                short op_code = Bitpack_getu(instruction, 4, 28);
-                short a = Bitpack_getu(instruction, 3, 6);
-                short b = Bitpack_getu(instruction, 3, 3);
-                short c = Bitpack_getu(instruction, 3, 0);
-
+                op_code = Bitpack_getu(instruction, 4, 28);
+                short a = 0;
+                short b = 0;
+                short c = 0;
+                uint32_t value = 0;
+                if (op_code != 13 ) {
+                        a = Bitpack_getu(instruction, 3, 6);
+                        b = Bitpack_getu(instruction, 3, 3);
+                        c = Bitpack_getu(instruction, 3, 0);
+                } else {
+                        a = Bitpack_getu(instruction, 3, 25);
+                        value = Bitpack_getu(instruction, 24, 0);
+                }
                 assert(op_code >= 0 && op_code < 14 && a >= 0 && a < 8 && b >= 0 && b < 8 && c >= 0 && c < 8);
-
                 switch (op_code) {
                         case 0: conditional_move(&$r, a, b, c);
                                 break;
-                        case 1: segmented_load(&$r, &$m, num_words, a, b, c);
+                        case 1: segmented_load(&$r, $m, a, b, c);
                                 break;
-                        case 2: segmented_store(&$r, &$m, num_words, a, b, c);
+                        case 2: segmented_store(&$r, $m, a, b, c);
                                 break;
                         case 3: addition(&$r, a, b, c);
                                 break;
@@ -182,26 +112,28 @@ int main (int argc, char *argv[])
                                 break;     
                         case 7: halt();
                                 break;     
-                        case 8: map_segment(&$r, &$m, &stack, num_words, a, b, c);
+                        case 8: map_segment(&$r, $m, b, c);
                                 break;     
-                        case 9: umap_segment(&$r, &$m, &stack, num_words, a, b, c);
+                        case 9: umap_segment(&$r, $m, c);
                                 break;     
-                        case 10: output(&$r, a, b, c);
+                        case 10: output(&$r, c);
                                 break;     
-                        case 11: input(&$r, a, b, c);
+                        case 11: input(&$r, c);
                                 break;     
-                        case 12: load_program(&$r, &$m, num_words, a, b, c, program_counter);
+                        case 12: load_program(&$r, $m, num_words, a, b, c,  program_counter);
                                 break;     
-                        case 13: load_value(&$r, a, instruction);
+                        case 13: load_value(&$r, a, value);
                                 break;              
                 }
+                program_counter = (uint32_t*) UArray_at(*(UArray_T *) Seg_get($m,0), ++x);
 
-                program_counter += byte_len;
+        } while (op_code != 7);
 
-        } while (1);
-
-        (void)$r;
         (void)fd;
+
+        UArray_free(&arr);
+        Seg_free($m);
+        
 
         return EXIT_SUCCESS;
 }
@@ -214,18 +146,20 @@ void conditional_move(uint32_t (*$r)[], short a, short b, short c)
         }
 }
 
-void segmented_load(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c)
+void segmented_load(uint32_t (*$r)[], Seg_T $m, short a, short b, short c)
 {
         // Need to check for nonexisting segments
-        int32_t (*temp)[num_words] = Seg_get(*$m, (*$r)[b]);
-        (*$r)[a] = (*temp)[c];
+        UArray_T segment = (UArray_T) Seg_get($m, (*$r)[b]);
+        (*$r)[a] = *(uint32_t *) UArray_at(segment,(*$r)[c]);
 }
 
-void segmented_store(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c)
+void segmented_store(uint32_t (*$r)[], Seg_T $m, short a, short b, short c)
 {
-        int32_t (*temp)[num_words] = Seg_get(*$m, (*$r)[a]);
+        UArray_T segment = (UArray_T) Seg_get($m, (*$r)[a]);
         int index = (*$r)[b];
-        (*temp)[index] = (*$r)[c]; 
+
+        uint32_t* word = (uint32_t *) UArray_at(segment, index);
+        *word = (*$r)[c]; 
 }
 
 void addition(uint32_t (*$r)[], short a, short b, short c)
@@ -256,66 +190,68 @@ void halt()
         exit(0);
 }
 
-void map_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c) 
+void map_segment(uint32_t (*$r)[], Seg_T $m, short b, short c) 
 {
+        uint32_t seg_index = (*$r)[b];
+        if (seg_index == 0) {
+                return;
+        }
         uint32_t size = (*$r)[c];
-        uint32_t arr[size] = { 0 };
-        Seg_map(&$m, stack, &arr);
+        UArray_T arr = UArray_new(size, sizeof(uint32_t));
 
-        (void)num_words;
-        (void)a;
-        (void)b;
+        while (seg_index + 1> (uint32_t)Seg_length($m)) {
+                Seg_addhi($m, NULL);
+        }
+        if ((UArray_T *)Seg_get($m, seg_index) == NULL) {
+                Seg_put($m, seg_index, arr);
+        }
 }
 
-void umap_segment(uint32_t (*$r)[], Seg_T *$m, Seg_T *stack, int num_words, short a, short b, short c)
+void umap_segment(uint32_t (*$r)[], Seg_T $m, short c)
 {
-        Seg_unmapp($m, stack, (*$r)[c]);
-
-        (void)$r;
-        (void)num_words;
-        (void)a;
-        (void)b;
+        // Need to free UArray
+        UArray_T to_unmap = (UArray_T) Seg_get($m, (*$r)[c]);
+        UArray_free(&to_unmap);
+        Seg_unmapp($m, (*$r)[c]);
 }
 
-void output(uint32_t (*$r)[], short a, short b, short c)
+void output(uint32_t (*$r)[], short c)
 {
-        assert((*$r)[c] <= 255);
         putchar((*$r)[c]);
-
-        (void)a;
-        (void)b;
 }
 
-void input(uint32_t (*$r)[], short a, short b, short c)
+void input(uint32_t (*$r)[], short c)
 {
-        // ASK TA about this
-        char extract_byte = getchar();
-
-        (void)$r;
-        (void)a;
-        (void)b;
+        char extracted_byte = getchar();
+        if (extracted_byte == EOF) {
+                (*$r)[c] = ~0;
+        } else {
+                (*$r)[c] = extracted_byte;
+        }
         (void)c;
 }
 
-void load_program(uint32_t (*$r)[], Seg_T *$m, int num_words, short a, short b, short c, uint32_t * program_counter)
+void load_program(uint32_t (*$r)[], Seg_T $m, int num_words, short a, short b, short c, uint32_t * program_counter)
 {
+        printf("%u\n", (*$r)[b]);
         if((*$r)[b] != 0) {
-                int size = sizeof(*(uint32_t (*)[])Seg_get($m, (*$r)[b]))/sizeof(uint32_t);
-                uint32_t duplicate[size] = *(uint32_t (*)[])Seg_get($m, (*$r)[b]);
-                *(uint32_t (*)[])Seg_get($m, 0)  = duplicate;
+                int length = sizeof((uint32_t (*)[])Seg_get($m, (*$r)[b]))/sizeof(uint32_t);
+                UArray_T duplicate = UArray_new(length, sizeof(uint32_t));
+                duplicate = *(UArray_T *)Seg_get($m, (*$r)[b]);
+                
+                UArray_T *seg_zero = (UArray_T *)Seg_get($m, 0);
+                *seg_zero = duplicate;
         }      
-        program_counter = (*(uint32_t (*)[])Seg_get($m, 0))[(*$r)[c]];
+        UArray_T program = (*(UArray_T *)Seg_get($m, 0));
+        program_counter = (uint32_t *) UArray_at(program, (*$r)[c]);
 
         (void)a;
         (void)c;
         (void)num_words;
         (void)program_counter;
-
 }
 
-void load_value(uint32_t (*$r)[], short a, uint32_t word)
+void load_value(uint32_t (*$r)[], short a, uint32_t value)
 {
-        (*$r)[a] = Bitpack_getu(word, 25, 0);
+        (*$r)[a] = value;
 }
-
-

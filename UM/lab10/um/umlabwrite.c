@@ -13,6 +13,15 @@ extern void emit_halt_test(Seq_T instructions);
 extern void emit_verbose_halt_test(Seq_T instructions);
 extern void emit_add_test(Seq_T instructions);
 extern void emit_printsix_test(Seq_T instructions);
+extern void emit_input_and_output_test(Seq_T instructions);
+extern void emit_loadprogram_test(Seq_T instructions);
+extern void emit_multiply_test(Seq_T instructions);
+extern void emit_divide_test(Seq_T instructions);
+extern void emit_nand_test(Seq_T instructions);
+extern void emit_condmov_test(Seq_T instructions);
+extern void emit_divide_by_zero_test(Seq_T instructions);
+extern void emit_seg_load_test(Seq_T stream);
+extern void emit_umnap_test(Seq_T stream);
 
 
 /* The array `tests` contains all unit tests for the lab. */
@@ -24,10 +33,19 @@ static struct test_info {
         /* writes instructions into sequence */
         void (*emit_test)(Seq_T stream);
 } tests[] = {
-        { "halt",         NULL, "", emit_halt_test },
-        { "verbose-halt", NULL, "", emit_verbose_halt_test },
-        { "add",          NULL, "", emit_add_test },
-        { "print-six",    NULL, "", emit_printsix_test}
+        { "halt",                 NULL, "", emit_halt_test },
+        { "verbose-halt",         NULL, "", emit_verbose_halt_test },
+        { "add",                  NULL, "", emit_add_test },
+        { "print-six",            NULL, "", emit_printsix_test},
+        { "input-output",         NULL, "", emit_input_and_output_test},
+        { "loadprog",             NULL, "", emit_loadprogram_test},
+        { "multiply",             NULL, "", emit_multiply_test},
+        { "divide",               NULL, "", emit_divide_test},
+        { "nand",                 NULL, "", emit_nand_test},
+        { "cond-mov",             NULL, "", emit_condmov_test},
+        { "divide-zero",          NULL, "", emit_divide_by_zero_test},
+        { "seg-load",             NULL, "", emit_seg_load_test},
+        { "unmap",                NULL, "", emit_umnap_test}
 };
 
   

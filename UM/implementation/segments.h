@@ -15,7 +15,7 @@ void *Seg_put(T, int, void *);
 void *Seg_get(T, int);
 void Seg_free(T);
 int Seg_length(T);
-void Seg_unmapp(T, T, int);
+void Seg_unmapp(T, int);
 void Seg_map(T, T, void *);
 
 void * Seg_value(T, int, int);

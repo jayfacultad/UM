@@ -25,7 +25,10 @@ typedef enum Um_opcode {
 /* Functions that return the two instruction types */
 
 Um_instruction three_register(Um_opcode op, int ra, int rb, int rc);
-Um_instruction loadval(unsigned ra, unsigned val);
+Um_instruction loadval(Um_instruction ra, unsigned val);
+Um_instruction input(Um_instruction ra);
+Um_instruction map(Um_instruction rb, Um_instruction rc);
+Um_instruction output(Um_instruction c);
 
 
 /* Wrapper functions for each of the instructions */
@@ -37,12 +40,70 @@ static inline Um_instruction halt(void)
 
 typedef enum Um_register { r0 = 0, r1, r2, r3, r4, r5, r6, r7 } Um_register;
 
-static inline Um_instruction add(Um_register a, Um_register b, Um_register c) 
+Um_instruction add(Um_register a, Um_register b, Um_register c) 
 {
         return three_register(ADD, a, b, c);
 }
 
-Um_instruction output(Um_register c);
+Um_instruction map(Um_register b, Um_instruction c)
+{
+        return three_register(ACTIVATE, 0, b, c);
+}
+
+Um_instruction unmap(Um_instruction c)
+{
+        return three_register(INACTIVATE, 0, 0, c);
+}
+
+Um_instruction load_program(Um_register b, Um_instruction c)
+{
+        return three_register(LOADP, 0, b, c);
+}
+
+Um_instruction segment_load(Um_instruction a, Um_instruction b, Um_instruction c)
+{
+        return three_register(SLOAD, a, b, c);
+}
+
+Um_instruction segment_store(Um_instruction a, Um_instruction b, Um_instruction c)
+{
+        return three_register(SSTORE, a, b, c);
+}
+
+Um_instruction multiply(Um_instruction a, Um_instruction b, Um_instruction c)
+{
+        return three_register(MUL, a, b, c);
+}
+
+Um_instruction divide(Um_instruction a, Um_instruction b, Um_instruction c)
+{
+        return three_register(DIV, a, b, c);
+}
+
+
+Um_instruction nand(Um_instruction a, Um_instruction b, Um_instruction c)
+{
+        return three_register(NAND, a, b, c);
+}
+
+Um_instruction cond_mov(Um_instruction a, Um_instruction b, Um_instruction c)
+{
+        return three_register(CMOV, a, b, c);
+}
+
+Um_instruction output(Um_register c)
+{
+        return three_register(OUT, 0, 0, c);
+
+}
+
+Um_instruction input(Um_register c)
+{
+        return three_register(IN, 0, 0, c);
+}
+
+
+
 
 /* Functions for working with streams */
 
@@ -56,6 +117,141 @@ extern void Um_write_sequence(FILE *output, Seq_T stream);
 
 
 /* Unit tests for the UM */
+
+void emit_condmov_test(Seq_T stream)
+{
+        emit(stream, loadval(r1, 1));
+        emit(stream, loadval(r2, 3));
+        emit(stream, loadval(r3, 0));
+        emit(stream, cond_mov(r1, r2, r3));
+        emit(stream, output(r1));
+
+        emit(stream, loadval(r1, 1));
+        emit(stream, loadval(r2, 3));
+        emit(stream, loadval(r3, 1)); 
+        emit(stream, cond_mov(r1, r2, r3));
+        emit(stream, output(r1)); 
+
+        emit(stream, halt());              
+}
+
+void emit_multiply_test(Seq_T stream)
+{
+        emit(stream, loadval(r2, 5));
+        emit(stream, loadval(r3, 6));
+        emit(stream, multiply(r1, r2, r3));
+        emit(stream, output(r1));
+
+        emit(stream, halt());
+
+}
+
+void emit_divide_test(Seq_T stream)
+{
+        emit(stream, loadval(r2, 40));
+        emit(stream, loadval(r3, 2));
+        emit(stream, divide(r1, r2, r3));
+        emit(stream, output(r1));
+
+        emit(stream, halt());
+
+}
+
+void emit_divide_by_zero_test(Seq_T stream)
+{
+        emit(stream, loadval(r2, 40));
+        emit(stream, loadval(r3, 0));
+        emit(stream, divide(r1, r2, r3));
+        emit(stream, output(r1));
+
+        emit(stream, halt());        
+}
+
+void emit_nand_test(Seq_T stream)
+{
+        emit(stream, loadval(r2, 7));
+        emit(stream, loadval(r3, 7));
+        emit(stream, nand(r1, r2, r3));
+        emit(stream, output(r1));
+
+        emit(stream, loadval(r2, 0));
+        emit(stream, loadval(r3, 0));
+        emit(stream, nand(r1, r2, r3));
+        emit(stream, output(r1));
+
+        emit(stream, loadval(r2, 33554431));
+        emit(stream, loadval(r3, (33554431 - 1)));
+        emit(stream, nand(r1, r2, r3));
+        emit(stream, output(r1));
+
+        emit(stream, halt());
+}
+
+// Still need to test
+void emit_loadprogram_test(Seq_T stream)
+{
+        emit(stream, loadval(r0, 2));
+        emit(stream, loadval(r1, 1));
+        emit(stream, loadval(r2, 0));
+        emit(stream, loadval(r3, 75));
+        emit(stream, loadval(r4, 74));
+        emit(stream, map(r1, r0));
+
+        emit(stream, segment_store(r1, r2, r3));
+        emit(stream, segment_store(r1, r1, r4));
+        
+        emit(stream, load_program(r1, r1));
+
+        emit(stream, halt());
+
+}
+
+void emit_seg_load_test(Seq_T stream)
+{
+        emit(stream, loadval(r0, 2));
+        emit(stream, loadval(r1, 1));
+        emit(stream, loadval(r2, 0));
+        emit(stream, loadval(r3, 75));
+        emit(stream, loadval(r4, 74));
+        emit(stream, map(r1, r0));
+
+        emit(stream, segment_store(r1, r2, r3));
+        emit(stream, segment_store(r1, r1, r4));
+        
+        emit(stream, segment_load(r5, r1, r1));
+        emit(stream, output(r5));
+
+        emit(stream, halt());
+
+}
+
+void emit_umnap_test(Seq_T stream)
+{
+        emit(stream, loadval(r0, 2));
+        emit(stream, loadval(r1, 1));
+        emit(stream, loadval(r2, 0));
+        emit(stream, loadval(r3, 75));
+        emit(stream, loadval(r4, 74));
+        emit(stream, map(r1, r0));
+
+        emit(stream, segment_store(r1, r2, r3));
+        emit(stream, segment_store(r1, r1, r4));
+
+        emit(stream, loadval(r5, 76));
+        emit(stream, output(r5));
+
+        emit(stream, unmap(r1));
+
+        emit(stream, loadval(r6, 77));
+        emit(stream, output(r6));
+
+        emit(stream, segment_store(r1, r2, r3));
+        emit(stream, loadval(r5, 78));
+        emit(stream, output(r5));
+
+        emit(stream, halt());
+
+}
 
 void emit_halt_test(Seq_T stream)
 {
@@ -75,11 +271,17 @@ void emit_verbose_halt_test(Seq_T stream)
         emit(stream, output(r1));
         emit(stream, loadval(r1, '\n'));
         emit(stream, output(r1));
+
+
 }
 
 void emit_add_test(Seq_T stream)
 {
+        emit(stream, loadval(r2, 5));
+        emit(stream, loadval(r3, 6));
         emit(stream, add(r1, r2, r3));
+        emit(stream, output(r1));
+
         emit(stream, halt());
 }
 
@@ -89,6 +291,15 @@ void emit_printsix_test(Seq_T stream)
         emit(stream, loadval(r2, 6));
         emit(stream, add(r3, r1, r2));
         emit(stream, output(r3));
+
+        emit(stream, halt());
+}
+
+void emit_input_and_output_test(Seq_T stream)
+{
+        emit(stream, input(r1));
+        emit(stream, output(r1));
+
         emit(stream, halt());
 }
 
@@ -103,11 +314,6 @@ Um_instruction loadval(unsigned ra, unsigned val)
         return instruction;
 }
 
-Um_instruction output(Um_register c)
-{
-        return three_register(OUT, 0, 0, c);
-
-}
 
 Um_instruction three_register(Um_opcode op, int ra, int rb, int rc)
 {
