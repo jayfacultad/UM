@@ -40,7 +40,7 @@ void *Seg_put(T seg, int i, void *x)
         return Seq_put((Seq_T) seg, i, x);
 }
 
-void Seg_free(T seg)
+void Seg_free(T *seg)
 {
         Seq_free((Seq_T *)(seg));
 }

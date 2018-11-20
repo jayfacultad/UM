@@ -148,7 +148,7 @@ void emit_multiply_test(Seq_T stream)
 
 void emit_divide_test(Seq_T stream)
 {
-        emit(stream, loadval(r2, 40));
+        emit(stream, loadval(r2, 158));
         emit(stream, loadval(r3, 2));
         emit(stream, divide(r1, r2, r3));
         emit(stream, output(r1));
@@ -190,18 +190,53 @@ void emit_nand_test(Seq_T stream)
 // Still need to test
 void emit_loadprogram_test(Seq_T stream)
 {
-        emit(stream, loadval(r0, 2));
+
+        emit(stream, loadval(r0, 1));
+        emit(stream, loadval(r1, 5));
+        emit(stream, map(r0, r1));
+
+        emit(stream, loadval(r0, 0));
         emit(stream, loadval(r1, 1));
-        emit(stream, loadval(r2, 0));
-        emit(stream, loadval(r3, 75));
-        emit(stream, loadval(r4, 74));
-        emit(stream, map(r1, r0));
+        emit(stream, loadval(r2, 2));
+        emit(stream, loadval(r3, 3));
+        emit(stream, loadval(r4, 4));
 
-        emit(stream, segment_store(r1, r2, r3));
-        emit(stream, segment_store(r1, r1, r4));
-        
+        emit(stream, loadval(r6, 28));
+        emit(stream, segment_load(r7, r0, r6));
+        emit(stream, segment_store(r1, r0, r7)); // put halt  here
+
+        emit(stream, loadval(r6, 29));
+        emit(stream, segment_load(r7, r0, r6));
+        emit(stream, segment_store(r1, r1, r7)); // put load value 37 to r7 here
+
+        emit(stream, loadval(r6, 30));
+        emit(stream, segment_load(r7, r0, r6));
+        emit(stream, segment_store(r1, r2, r7)); // put r6 = r7 + r7 here
+
+        emit(stream, loadval(r6, 31));
+        emit(stream, segment_load(r7, r0, r6));
+        emit(stream, segment_store(r1, r3, r7)); // put output r6 here
+
+        emit(stream, loadval(r6, 32));
+        emit(stream, segment_load(r7, r0, r6));
+        emit(stream, segment_store(r1, r4, r7)); // put halt here 
+
         emit(stream, load_program(r1, r1));
+ 
+        emit(stream, loadval(r7, 22));
+        emit(stream, add(r6, r7, r7));
+        emit(stream, output(r6));
+        emit(stream, halt());
 
+        emit(stream, halt());
+        emit(stream, loadval(r7, 37));
+        emit(stream, add(r6, r7, r7));
+        emit(stream, output(r6));
+        emit(stream, halt());
+
+        emit(stream, loadval(r7, 24));
+        emit(stream, add(r6, r7, r7));
+        emit(stream, output(r6));
         emit(stream, halt());
 
 }
@@ -237,17 +272,28 @@ void emit_umnap_test(Seq_T stream)
         emit(stream, segment_store(r1, r2, r3));
         emit(stream, segment_store(r1, r1, r4));
 
-        emit(stream, loadval(r5, 76));
-        emit(stream, output(r5));
-
         emit(stream, unmap(r1));
 
-        emit(stream, loadval(r6, 77));
-        emit(stream, output(r6));
+        emit(stream, loadval(r0, 2));
+        emit(stream, loadval(r1, 1));
+        emit(stream, loadval(r2, 0));
+        emit(stream, loadval(r3, 75));
+        emit(stream, loadval(r4, 74));
+        emit(stream, map(r1, r0));
 
         emit(stream, segment_store(r1, r2, r3));
-        emit(stream, loadval(r5, 78));
+        emit(stream, segment_store(r1, r1, r4));
+
+        emit(stream, segment_load(r5, r1, r2));
         emit(stream, output(r5));
+        emit(stream, segment_load(r5, r1, r1));
+        emit(stream, output(r5));
+
+        emit(stream, output(r6));
+
+        // emit(stream, segment_store(r1, r2, r3));
+        // emit(stream, loadval(r5, 78));
+        // emit(stream, output(r5));
 
         emit(stream, halt());
 
@@ -277,12 +323,13 @@ void emit_verbose_halt_test(Seq_T stream)
 
 void emit_add_test(Seq_T stream)
 {
-        emit(stream, loadval(r2, 5));
-        emit(stream, loadval(r3, 6));
+        emit(stream, loadval(r2, 73));
+        emit(stream, loadval(r3, 74));
         emit(stream, add(r1, r2, r3));
         emit(stream, output(r1));
 
         emit(stream, halt());
+
 }
 
 void emit_printsix_test(Seq_T stream)
@@ -319,7 +366,7 @@ Um_instruction three_register(Um_opcode op, int ra, int rb, int rc)
 {
         Um_instruction instruction = 0;
 
-        assert(ra < 7 && rb < 7 && rc < 7); 
+        assert(ra < 8 && rb < 8 && rc < 8); 
 
         instruction = Bitpack_newu(instruction, 4, 28, op);
         instruction = Bitpack_newu(instruction, 3, 6, ra);

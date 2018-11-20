@@ -44,7 +44,7 @@ static struct test_info {
         { "nand",                 NULL, "", emit_nand_test},
         { "cond-mov",             NULL, "", emit_condmov_test},
         { "divide-zero",          NULL, "", emit_divide_by_zero_test},
-        { "seg-load",             NULL, "", emit_seg_load_test},
+        { "map-load-store",       NULL, "", emit_seg_load_test},
         { "unmap",                NULL, "", emit_umnap_test}
 };
 

@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
-#include "segments.h"
 #include <bitpack.h>
+#include <math.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -11,35 +11,32 @@
 #include <assert.h>
 
 #include "uarray.h"
-
-#define Seq_T Seg_T
-
-#define UArray_put(uarray, index, value) (uint32_t *word = UArray_at(uarray, index); *word = value;)
+#include "seq.h"
 
 const int byte_len = 8;
 
 void conditional_move(uint32_t (*$r)[], short a, short b, short c);
-void segmented_load(uint32_t (*$r)[], Seg_T $m, short a, short b, short c);
-void segmented_store(uint32_t (*$r)[], Seg_T $m, short a, short b, short c);
+void segmented_load(uint32_t (*$r)[], Seq_T $m, short a, short b, short c);
+void segmented_store(uint32_t (*$r)[], Seq_T $m, short a, short b, short c);
 void addition(uint32_t (*$r)[], short a, short b, short c);
 void multiplication(uint32_t (*$r)[], short a, short b, short c);
 void division(uint32_t (*$r)[], short a, short b, short c);
 void bitwise_nand(uint32_t (*$r)[], short a, short b, short c);
 void halt();
-void map_segment(uint32_t (*$r)[], Seg_T $m, short b, short c);
-void umap_segment(uint32_t (*$r)[], Seg_T $m, short c);
+void map_segment(uint32_t (*$r)[], Seq_T $m, short b, short c, Seq_T unmapped);
+void unmap_segment(uint32_t (*$r)[], Seq_T $m, short c, Seq_T unmapped);
 void output(uint32_t (*$r)[], short c);
 void input(uint32_t (*$r)[], short c);
-void load_program(uint32_t (*$r)[], Seg_T $m, int num_words, short a, short b, short c, uint32_t * program_counter);
+void load_program(uint32_t (*$r)[], Seq_T $m, short b);
 void load_value(uint32_t (*$r)[], short a, uint32_t value);
-
 
 int main (int argc, char *argv[])
 {
         FILE * fp;
-        uint32_t $r[8];                // Registers
-        Seg_T $m = Seg_new(1000);      // Sequence of segments
-        uint32_t *program_counter;     // Program Counter
+        uint32_t $r[8] = {0};           // Registers
+        Seq_T $m = Seq_new(1000);       // Sequence of Seqments
+        Seq_T unmapped = Seq_new(100);  // Stack of unmapped Seqments
+        uint32_t *program_counter = 0;  // Program Counter
 
         if (argc == 2) {
                 fp = fopen(argv[1], "r");
@@ -48,53 +45,70 @@ int main (int argc, char *argv[])
                 fprintf(stderr, "Need one file for input");
         }
 
-        int fd = fileno(fp);
+        uint32_t fd = fileno(fp);
         struct stat st;
         stat(argv[1], &st);
-        int file_size = st.st_size;
-        int num_words = file_size / (sizeof(uint32_t)); 
+        uint32_t file_size = st.st_size;
+        uint32_t num_words = file_size / (sizeof(uint32_t)); 
+        (void)fd;
 
-        // Create and load Segment 0 with every instruction
+        // Create and load Seqment 0 with every instruction
         UArray_T arr = UArray_new(num_words, sizeof(uint32_t));
-        Seg_addhi($m, &arr);
+        uint32_t x = 0;
+        while (x < num_words) {
+                uint32_t *value = (uint32_t*)UArray_at(arr, x++);
+                *value = 0;
+        }
         
-        int offset = 0;
-        for (int i = 0; i < num_words; i++) {
+        uint32_t offset = 0;
+        for (uint32_t i = 0; i < num_words; i++) {
                 uint32_t word = 0;
-                for (int j = 0; j < 4; j++) { 
+                for (uint32_t j = 0; j < 4; j++) { 
                         uint32_t extract_byte = (uint32_t)getc(fp);
                         word = Bitpack_newu(word, byte_len, 24 - (byte_len  * j), extract_byte);             
                 }
-                // printf("%x\n", word);
                 uint32_t *value = UArray_at(arr, offset++);
-                *value = word;
+                *value = (uint32_t)word;
         }
-        Seg_put($m, 0, &arr);
-        //        fprintf(stdout, "%x\n", *(uint32_t*)UArray_at(*(UArray_T *)Seg_get($m, 0),0));
-        fclose(fp);
 
+        Seq_addhi($m, arr);    
 
-        int x = 0;
-        program_counter = (uint32_t *)UArray_at(*(UArray_T*)Seg_get($m, 0), 0);
-                //(uint32_t *)UArray_at(*(UArray_T*)Seg_get($m, 0), 0);
-        short op_code;
-        do {
-                uint32_t instruction = *program_counter;
+        program_counter = (uint32_t *)UArray_at((UArray_T)Seq_get($m, 0), 0);
 
-                op_code = Bitpack_getu(instruction, 4, 28);
+        short op_code = 0;
+        uint32_t max = num_words;
+
+        uint32_t i = 0;
+
+        while (i < max) {
+
+                uint32_t word = *program_counter;
+
+                if ( (i + 1) < max ) {
+                        program_counter = (uint32_t*) UArray_at( (UArray_T) Seq_get($m,0), ++i);
+                } else {
+                        ++i;
+                }
+               
+                op_code = Bitpack_getu(word, 4, 28);
+
                 short a = 0;
                 short b = 0;
                 short c = 0;
                 uint32_t value = 0;
+
                 if (op_code != 13 ) {
-                        a = Bitpack_getu(instruction, 3, 6);
-                        b = Bitpack_getu(instruction, 3, 3);
-                        c = Bitpack_getu(instruction, 3, 0);
-                } else {
-                        a = Bitpack_getu(instruction, 3, 25);
-                        value = Bitpack_getu(instruction, 24, 0);
+                        a = Bitpack_getu(word, 3, 6);
+                        b = Bitpack_getu(word, 3, 3);
+                        c = Bitpack_getu(word, 3, 0);
+                } else if (op_code == 13) {
+                        a = Bitpack_getu(word, 3, 25);
+                        value = Bitpack_getu(word, 25, 0);
+                        value = value << 7;
+                        value = value >> 7;
                 }
-                assert(op_code >= 0 && op_code < 14 && a >= 0 && a < 8 && b >= 0 && b < 8 && c >= 0 && c < 8);
+                assert(op_code >= 0 && op_code < 14);
+
                 switch (op_code) {
                         case 0: conditional_move(&$r, a, b, c);
                                 break;
@@ -110,79 +124,106 @@ int main (int argc, char *argv[])
                                 break;
                         case 6: bitwise_nand(&$r, a, b, c);
                                 break;     
-                        case 7: halt();
+                        case 7: 
+                                while (Seq_length($m) != 0) {
+                                        UArray_T to_delete = (UArray_T)Seq_remhi($m);
+                                        if (to_delete != NULL) {
+                                                UArray_free(&to_delete);
+                                        }
+                                }
+                                while (Seq_length(unmapped) != 0) {
+                                        uint32_t *to_delete = (uint32_t*)Seq_remhi(unmapped);
+                                        if (to_delete != NULL) {
+                                                free(to_delete);
+                                        }
+                                }
+                                Seq_free(&$m);
+                                Seq_free(&unmapped);
+                                fclose(fp);
+                                halt();
                                 break;     
-                        case 8: map_segment(&$r, $m, b, c);
+                        case 8: map_segment(&$r, $m, b, c, unmapped);
                                 break;     
-                        case 9: umap_segment(&$r, $m, c);
+                        case 9: unmap_segment(&$r, $m, c, unmapped);
                                 break;     
                         case 10: output(&$r, c);
-                                break;     
+                                 break;     
                         case 11: input(&$r, c);
-                                break;     
-                        case 12: load_program(&$r, $m, num_words, a, b, c,  program_counter);
-                                break;     
+                                 break;     
+                        case 12: load_program(&$r, $m, b);
+                                 i = (uint32_t)$r[c];
+                                 max = (uint32_t)UArray_length((UArray_T)Seq_get($m, 0));
+                                 program_counter = (uint32_t*) UArray_at( (UArray_T) Seq_get($m,0), i);
+                                 break;     
                         case 13: load_value(&$r, a, value);
-                                break;              
+                                 break;              
                 }
-                program_counter = (uint32_t*) UArray_at(*(UArray_T *) Seg_get($m,0), ++x);
 
-        } while (op_code != 7);
+        }
 
-        (void)fd;
-
-        UArray_free(&arr);
-        Seg_free($m);
+        while(Seq_length($m) != 0) {
+                UArray_T to_delete = (UArray_T)Seq_remhi($m);
+                if (to_delete != NULL) {
+                        UArray_free(&to_delete);
+                }
+        }
+        while (Seq_length(unmapped) != 0) {
+                uint32_t *to_delete = (uint32_t*)Seq_remhi(unmapped);
+                        if (to_delete != NULL) {
+                                free(to_delete);
+                        }
+                }
+        Seq_free(&$m);
+        Seq_free(&unmapped);
+        fclose(fp);
         
-
         return EXIT_SUCCESS;
 }
 
 
 void conditional_move(uint32_t (*$r)[], short a, short b, short c)
 {
-        if ((*$r)[c] != 0) {
-                (*$r)[a] = (*$r)[b];
+        if ( (*$r)[c] != 0) {
+                (*$r)[a] = (uint32_t)(*$r)[b];
         }
 }
 
-void segmented_load(uint32_t (*$r)[], Seg_T $m, short a, short b, short c)
+void segmented_load(uint32_t (*$r)[], Seq_T $m, short a, short b, short c)
 {
-        // Need to check for nonexisting segments
-        UArray_T segment = (UArray_T) Seg_get($m, (*$r)[b]);
-        (*$r)[a] = *(uint32_t *) UArray_at(segment,(*$r)[c]);
+        UArray_T segment = (UArray_T) Seq_get($m, (*$r)[b]);
+        uint32_t index = (*$r)[c];
+
+        uint32_t *word = (uint32_t *) (uintptr_t)UArray_at(segment,index);
+        (*$r)[a] = *word;          
 }
 
-void segmented_store(uint32_t (*$r)[], Seg_T $m, short a, short b, short c)
+void segmented_store(uint32_t (*$r)[], Seq_T $m, short a, short b, short c)
 {
-        UArray_T segment = (UArray_T) Seg_get($m, (*$r)[a]);
-        int index = (*$r)[b];
-
-        uint32_t* word = (uint32_t *) UArray_at(segment, index);
-        *word = (*$r)[c]; 
+        UArray_T segment = (UArray_T) Seq_get($m, (*$r)[a]);
+        uint32_t index = (uint32_t)(*$r)[b];
+       
+        uint32_t *word = (uint32_t *) (uintptr_t)UArray_at(segment, index);
+        *word = (uint32_t)(*$r)[c]; 
 }
 
 void addition(uint32_t (*$r)[], short a, short b, short c)
-{
-        uint32_t temp = 1;
-        (*$r)[a] = ((*$r)[b] + (*$r)[c]) & ((temp << 31) - 1); 
+{ 
+        (*$r)[a] = (uint32_t)( (uint32_t)(*$r)[b] + (uint32_t)(*$r)[c] );
 }
 
 void multiplication(uint32_t (*$r)[], short a, short b, short c)
 {
-        uint32_t temp = 1;
-        (*$r)[a] = ((*$r)[b] * (*$r)[c]) & ((temp << 31) - 1); 
+        (*$r)[a] = (uint32_t)( (uint32_t)(*$r)[b] * (uint32_t)(*$r)[c] ); 
 }
 
 void division(uint32_t (*$r)[], short a, short b, short c)
 {
-        uint32_t temp = 1;
-        (*$r)[a] = ((*$r)[b] / (*$r)[c]) & ((temp << 31) - 1); 
+        (*$r)[a] = (uint32_t) ((uint32_t)(*$r)[b]) / (uint32_t)(*$r)[c]; 
 }
 
 void bitwise_nand(uint32_t (*$r)[], short a, short b, short c)
 {
-        (*$r)[a] = ~((*$r)[b] & (*$r)[c]);
+        (*$r)[a] = (uint32_t) ~( (uint32_t)(*$r)[b] & (uint32_t)(*$r)[c] );
 }
 
 void halt()
@@ -190,29 +231,40 @@ void halt()
         exit(0);
 }
 
-void map_segment(uint32_t (*$r)[], Seg_T $m, short b, short c) 
-{
-        uint32_t seg_index = (*$r)[b];
-        if (seg_index == 0) {
-                return;
-        }
-        uint32_t size = (*$r)[c];
-        UArray_T arr = UArray_new(size, sizeof(uint32_t));
+void map_segment(uint32_t (*$r)[], Seq_T $m, short b, short c, Seq_T unmapped) 
+{       
+        uint32_t length = (uint32_t)(*$r)[c];
+        UArray_T arr = UArray_new(length, sizeof(uint32_t));
 
-        while (seg_index + 1> (uint32_t)Seg_length($m)) {
-                Seg_addhi($m, NULL);
+        uint32_t i = 0;
+        while (i < length) {
+                uint32_t *value = (uint32_t*)(uintptr_t)UArray_at(arr, i++);
+                *value = 0;
         }
-        if ((UArray_T *)Seg_get($m, seg_index) == NULL) {
-                Seg_put($m, seg_index, arr);
-        }
+
+        if (Seq_length(unmapped) > 0) {
+                uint32_t *index = (uint32_t*)(uintptr_t)Seq_remhi(unmapped);
+                UArray_T to_delete = Seq_put($m, *index, arr);
+                (*$r)[b] = *index;
+                free(index);
+                if (to_delete != NULL) {
+                        UArray_free(&to_delete);
+                }
+                
+        } else {
+                Seq_addhi($m, arr);
+                (*$r)[b] = (uint32_t)(Seq_length($m) - 1);
+        }          
 }
 
-void umap_segment(uint32_t (*$r)[], Seg_T $m, short c)
+void unmap_segment(uint32_t (*$r)[], Seq_T $m, short c, Seq_T unmapped)
 {
-        // Need to free UArray
-        UArray_T to_unmap = (UArray_T) Seg_get($m, (*$r)[c]);
+        uint32_t *index = malloc(sizeof(uint32_t));
+        *index = (uint32_t)(*$r)[c];
+        Seq_addhi(unmapped, (uint32_t *)(uintptr_t)index);
+
+        UArray_T to_unmap = (UArray_T) Seq_put($m, (*$r)[c], NULL);
         UArray_free(&to_unmap);
-        Seg_unmapp($m, (*$r)[c]);
 }
 
 void output(uint32_t (*$r)[], short c)
@@ -226,32 +278,23 @@ void input(uint32_t (*$r)[], short c)
         if (extracted_byte == EOF) {
                 (*$r)[c] = ~0;
         } else {
-                (*$r)[c] = extracted_byte;
+                (*$r)[c] = (uint32_t)extracted_byte;
         }
-        (void)c;
 }
 
-void load_program(uint32_t (*$r)[], Seg_T $m, int num_words, short a, short b, short c, uint32_t * program_counter)
-{
-        printf("%u\n", (*$r)[b]);
+void load_program(uint32_t (*$r)[], Seq_T $m, short b)
+{ 
         if((*$r)[b] != 0) {
-                int length = sizeof((uint32_t (*)[])Seg_get($m, (*$r)[b]))/sizeof(uint32_t);
-                UArray_T duplicate = UArray_new(length, sizeof(uint32_t));
-                duplicate = *(UArray_T *)Seg_get($m, (*$r)[b]);
-                
-                UArray_T *seg_zero = (UArray_T *)Seg_get($m, 0);
-                *seg_zero = duplicate;
-        }      
-        UArray_T program = (*(UArray_T *)Seg_get($m, 0));
-        program_counter = (uint32_t *) UArray_at(program, (*$r)[c]);
-
-        (void)a;
-        (void)c;
-        (void)num_words;
-        (void)program_counter;
+                UArray_T to_copy = (UArray_T)Seq_get($m, (*$r)[b]);
+                UArray_T duplicate = UArray_copy(to_copy, UArray_length(to_copy));
+                UArray_T to_delete = Seq_put($m, 0, duplicate);
+                UArray_free(&to_delete);
+        }           
 }
 
 void load_value(uint32_t (*$r)[], short a, uint32_t value)
 {
-        (*$r)[a] = value;
+        value = value << 7;
+        value = value >> 7;
+        (*$r)[a] = (uint32_t)value;
 }
