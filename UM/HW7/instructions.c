@@ -14,6 +14,7 @@
 #include "seq.h"
 #include "instructions.h"
 
+
 /*****************************************************************************
  Function: conditional_move
  Purpose: Store register b value in register a if register c is nonzero.
@@ -256,6 +257,16 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
         uint32_t i = 0;
         /* Number of instructions in the 0th segment */
         uint32_t max = (uint32_t)UArray_length((UArray_T)Seq_get($m, 0));
+        uint32_t opcode_mask = 0xF0000000;
+        uint32_t a_mask = 0x1C0;
+        uint32_t b_mask = 0x38;
+        uint32_t c_mask = 0x7;
+        uint32_t loadval_a_mask = 0xE000000;
+        uint32_t loadval_val_mask = 0x1FFFFFF;
+        uint32_t opcode_shift = 28;
+        uint32_t a_shift = 6;
+        uint32_t b_shift = 3;
+        uint32_t loadval_a_shift = 25;
 
         /* Iterate until the last instruction is executed */
         while (i < max) {
@@ -273,7 +284,7 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                 }
                 
                 /* Get the instruction from the word */
-                op_code = Bitpack_getu(word, 4, 28);
+                op_code = (word & opcode_mask) >> opcode_shift;
 
                 short a = 0;
                 short b = 0;
@@ -282,12 +293,12 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
 
                 /* Get the registers of the word depending on the instruction*/
                 if (op_code != 13 ) {
-                        a = Bitpack_getu(word, 3, 6);
-                        b = Bitpack_getu(word, 3, 3);
-                        c = Bitpack_getu(word, 3, 0);
+                        a = (word & a_mask) >> a_shift;
+                        b = (word & b_mask) >> b_shift;
+                        c = word & c_mask;
                 } else if (op_code == 13) {
-                        a = Bitpack_getu(word, 3, 25);
-                        value = Bitpack_getu(word, 25, 0);
+                        a = (word & loadval_a_mask) >> loadval_a_shift;
+                        value = word & loadval_val_mask;
                 }
                 assert(op_code >= 0 && op_code < 14);
 
