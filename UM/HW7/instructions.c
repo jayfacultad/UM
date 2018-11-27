@@ -277,8 +277,7 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                 if ( (i + 1) < max ) {
                         /* Set program counter to next instruction to be 
                         executed */
-                        program_counter = (uint32_t*) UArray_at( (UArray_T) 
-                                           Seq_get($m,0), ++i);
+                        program_counter += 1;
                 } else {
                         i++;
                 }
