@@ -1,0 +1,42 @@
+/*****************************************************************************
+*
+*   README
+*
+*   Jay Facultad
+*   Nathan Sahelijo
+*   COMP 40 / Fall 2018
+*   Homework 6: A Universal Machine
+*   November 19, 2018
+*
+*****************************************************************************/
+
+
+/*****************************************************************************
+*
+*   Acknowledgments
+*
+*****************************************************************************/
+
+Acknowledgment of help received during this assignment: we asked for help from 
+several of the COMP40 TA's during their office hours, and they were an 
+invaluable resource.
+
+
+/*****************************************************************************
+*
+*   Final um
+*
+*****************************************************************************/
+
+Explain what routine in the final um takes up the most time, and say whether
+the assembly code could be improved
+
+/*****************************************************************************
+*
+*   Time spent on assignment
+*
+*****************************************************************************/
+
+Approximately 12 hours were spent analyzing the problems posed in the 
+assignment.  
+Approximately 8 hours were spent solving the problems after analysis.
