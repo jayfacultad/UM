@@ -267,16 +267,16 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
         uint32_t a_shift = 6;
         uint32_t b_shift = 3;
         uint32_t loadval_a_shift = 25;
-
+        
         /* Iterate until the last instruction is executed */
         while (i < max) {
-
+                
                 /* Get instruction to be executed */
                 uint32_t word = *program_counter;
-
+                
                 if ( (i + 1) < max ) {
                         /* Set program counter to next instruction to be 
-                        executed */
+                           executed */
                         program_counter += 1;
                 } else {
                         i++;
@@ -284,12 +284,12 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                 
                 /* Get the instruction from the word */
                 op_code = (word & opcode_mask) >> opcode_shift;
-
+                
                 short a = 0;
                 short b = 0;
                 short c = 0;
                 uint32_t value = 0;
-
+                
                 /* Get the registers of the word depending on the instruction*/
                 if (op_code != 13 ) {
                         a = (word & a_mask) >> a_shift;
@@ -300,51 +300,146 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                         value = word & loadval_val_mask;
                 }
                 assert(op_code >= 0 && op_code < 14);
-
+                
                 /* Switch case executes the instruction store in the word */
                 switch (op_code) {
-                        case 0: conditional_move(&$r, a, b, c);
+                case 0:
+                        if ( ($r)[c] != 0) {
+                                ($r)[a] = (uint32_t)($r)[b];
+                        }
+                        
+                        break;
+                case 1: 
+                        {
+                        /* Assign word from mapped segment to register a */
+                        ($r)[a] = *(uint32_t *) UArray_at((UArray_T) Seq_get($m, ($r)[b]),($r)[c]);          
+                        
+                        break;
+                        }
+                        case 2:  
+                                {
+                                /* Store value from register c into the word of a segment */
+                                uint32_t *word = (uint32_t *) UArray_at((UArray_T) Seq_get($m, ($r)[a]), (uint32_t)($r)[b]);
+                                *word = (uint32_t)($r)[c]; 
+                                
                                 break;
-                        case 1: segmented_load(&$r, $m, a, b, c);
+                                }
+                        case 3: 
+                                ($r)[a] = (uint32_t)( (uint32_t)($r)[b] + (uint32_t)($r)[c] );
                                 break;
-                        case 2: segmented_store(&$r, $m, a, b, c);
-                                break;
-                        case 3: addition(&$r, a, b, c);
-                                break;
-                        case 4: multiplication(&$r, a, b, c);
+                        case 4: 
+                                ($r)[a] = (uint32_t)( (uint32_t)($r)[b] * (uint32_t)($r)[c] ); 
                                 break;   
-                        case 5: division(&$r, a, b, c);
+                        case 5: 
+                                ($r)[a] = (uint32_t) ((uint32_t)($r)[b]) / (uint32_t)($r)[c]; 
                                 break;
-                        case 6: bitwise_nand(&$r, a, b, c);
+                        case 6: 
+                                ($r)[a] = (uint32_t) ~( (uint32_t)($r)[b] & (uint32_t)($r)[c] );
                                 break;     
-                        case 7: 
+                        case 7: {
                                 /* Free memory before halting program */
-                                free_instructions($m, unmapped);
+                                while(Seq_length($m) != 0) {
+                                        UArray_T to_delete = (UArray_T)Seq_remhi($m);
+                                        if (to_delete != NULL) {
+                                                UArray_free(&to_delete);
+                                        }
+                                }
+                                while (Seq_length(unmapped) != 0) {
+                                        uint32_t *to_delete = (uint32_t*)Seq_remhi(unmapped);
+                                        if (to_delete != NULL) {
+                                                free(to_delete);
+                                        }
+                                }
+                                
+                                Seq_free(&$m);
+                                Seq_free(&unmapped);
+                                
                                 fclose(*fp);
                                 halt();
+                                break;     }
+                        case 8: 
+                                {
+                                        
+                                        /* Check if there are any unmapped segments */
+                                        if (Seq_length(unmapped) > 0) {
+                                                /* Store new segment into unmapped segment index */
+                                                uint32_t *index = (uint32_t*)(uintptr_t)Seq_remhi(unmapped);
+                                                UArray_T to_delete = Seq_put($m, *index, UArray_new((uint32_t)($r)[c], sizeof(uint32_t)));
+                                                ($r)[b] = *index;
+                                                
+                                                /* Free segment identifier in unmapped stack */
+                                                free(index);
+                                                if (to_delete != NULL) {
+                                                        /* Free array of words in the segments identifier */
+                                                        UArray_free(&to_delete);
+                                                }                
+                                        } else {
+                                                /* If no unmapped segment, create new segment position */
+                                                Seq_addhi($m, UArray_new((uint32_t)($r)[c], sizeof(uint32_t)));
+                                                ($r)[b] = (uint32_t)(Seq_length($m) - 1);
+                                        }          
+                                        
+                                        break;   
+                                }
+                        case 9: 
+                                {
+                                /* Add segment identifier into umapped stack */
+                                uint32_t *index = malloc(sizeof(uint32_t));
+
+                                *index = (uint32_t)($r)[c];
+                                Seq_addhi(unmapped, (void *)(uintptr_t)index);
+                                
+                                /* Free recently unmapped segment */
+                                UArray_T to_unmap = (UArray_T) Seq_put($m, ($r)[c], NULL);
+                                UArray_free(&to_unmap);
+                                
                                 break;     
-                        case 8: map_segment(&$r, $m, b, c, unmapped);
+                                }
+                        case 10: 
+                                putchar(($r)[c]);
                                 break;     
-                        case 9: unmap_segment(&$r, $m, c, unmapped);
+                        case 11: 
+                                {
+                                        /* Read byte from standard input */
+                                        char extracted_byte = getchar();
+                                        
+                                        /* Check if EOF */
+                                        if (extracted_byte == EOF) {
+                                                /* Store all 1s in register c if EOF */
+                                                ($r)[c] = ~0;
+                                        } else {
+                                                /* Store standard input value into register c */
+                                                ($r)[c] = (uint32_t)extracted_byte;
+                                        }
+                                        
+                                        break;  
+                                }
+                        case 12: 
+                                if(($r)[b] != 0) {
+                                        /* If value in register b is not 0 make a hard copy of segment
+                                           identified by the identifier stored in the register b */
+                                        UArray_T to_copy = (UArray_T)Seq_get($m, ($r)[b]);
+                                        UArray_T duplicate = UArray_copy(to_copy, 
+                                                                         UArray_length(to_copy));
+
+                                        /* Free segment previously stored in the 0th segment */
+                                        UArray_T to_delete = Seq_put($m, 0, duplicate);
+                                        UArray_free(&to_delete);
+                                }           
+                                i = (uint32_t)$r[c];
+                                /* Get number of instructions stored in new 
+                                   segment */
+                                max = (uint32_t)UArray_length((UArray_T)
+                                                              Seq_get($m, 0));
+                                /* Get next instruction to be executed */
+                                program_counter = (uint32_t*) UArray_at( 
+                                                                        (UArray_T) Seq_get($m,0), i);
                                 break;     
-                        case 10: output(&$r, c);
-                                 break;     
-                        case 11: input(&$r, c);
-                                 break;     
-                        case 12: load_program(&$r, $m, b);
-                                 i = (uint32_t)$r[c];
-                                 /* Get number of instructions stored in new 
-                                 segment */
-                                 max = (uint32_t)UArray_length((UArray_T)
-                                        Seq_get($m, 0));
-                                 /* Get next instruction to be executed */
-                                 program_counter = (uint32_t*) UArray_at( 
-                                        (UArray_T) Seq_get($m,0), i);
-                                 break;     
-                        case 13: load_value(&$r, a, value);
-                                 break;              
+                        case 13: 
+                                ($r)[a] = (uint32_t)value;
+                                break;              
                 }
-        }
+        }       
 }
 
 /*****************************************************************************
