@@ -1,0 +1,60 @@
+/*****************************************************************************
+*
+*   README
+*
+*   Jay Facultad
+*   Nathan Sahelijo
+*   COMP 40 / Fall 2018
+*   Homework 6: A Universal Machine
+*   November 19, 2018
+*
+*****************************************************************************/
+
+
+/*****************************************************************************
+*
+*   Acknowledgments
+*
+*****************************************************************************/
+
+Acknowledgment of help received during this assignment: we asked for help from 
+several of the COMP40 TA's during their office hours, and they were an 
+invaluable resource.
+
+/*****************************************************************************
+*
+*   Final um
+*
+*****************************************************************************/
+
+Explain what routine in the final um takes up the most time, and say whether
+the assembly code could be improved
+
+Our final um has Seq_get and UArray_at as the routines that use the greatest
+amount of time. Seq_get and UArray_at take 16.12% and 11.56% of 
+execute_instructions total time, where execute_instructions is 99.62% of the
+total cpu use time.
+
+Our Assembly code can't be improved significantly, as our current jumps are
+all required for the UM to function properly. Inside the 
+execute_instructions, we require the while loop jumps to execute all of the
+instructions, and to avoid accessing memory past the current segment. The if
+statement jumps are required to iterate the program counter without accessing 
+memory past the current segment index.
+
+We moved unnecessary computations outside the loop as explained in the 
+labnotes. Additionally, the number of memory reads (and writes) were reduced 
+when we removed varialbes storing pointers that were only accessed once per
+function. The elimination of function calls inside our while loop also
+reduced the number of memory accesses significantly.
+
+
+/*****************************************************************************
+*
+*   Time spent on assignment
+*
+*****************************************************************************/
+
+Approximately 8 hours were spent analyzing the problems posed in the 
+assignment.  
+Approximately 4 hours were spent solving the problems after analysis.

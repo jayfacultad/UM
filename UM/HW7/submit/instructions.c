@@ -64,7 +64,7 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                 short c = 0;
                 uint32_t value = 0;
                 
-                /* Get the registers of the word depending on the instruction*/
+                /*Get the registers of the word depending on the instruction*/
                 if (op_code != 13 ) {
                         a = (word & a_mask) >> a_shift;
                         b = (word & b_mask) >> b_shift;
@@ -91,15 +91,15 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                         {
                         /* Assign word from mapped segment to register a */
                         ($r)[a] = *(uint32_t *) UArray_at((UArray_T) 
-                                                          Seq_get($m, ($r)[b]),
-                                                          ($r)[c]);
+                                                        Seq_get($m, ($r)[b]),
+                                                        ($r)[c]);
                         
                         break;
                         }
                         case 2: 
                                 /*Store value into the word of a register*/
                                 {
-                                /* Store value from register c into the word of 
+                                /*Store value from register c into the word of 
                                    a segment */
                                 uint32_t *word = (uint32_t *) 
                                         UArray_at((UArray_T) 
@@ -146,7 +146,7 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                                 }
                                 while (Seq_length(unmapped) != 0) {
                                         uint32_t *to_delete = 
-                                                (uint32_t*)Seq_remhi(unmapped);
+                                               (uint32_t*)Seq_remhi(unmapped);
                                         if (to_delete != NULL) {
                                                 free(to_delete);
                                         }
@@ -190,11 +190,11 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                                                         /* Free array of words
                                                            in the segments 
                                                            identifier */
-                                                        UArray_free(&to_delete);
+                                                      UArray_free(&to_delete);
                                                 }                
                                         } else {
                                                 /* If no unmapped segment,
-                                                   create new segment position */
+                                                create new segment position */
                                                 Seq_addhi($m, 
                                                           UArray_new
                                                           ((uint32_t)($r)[c],
@@ -211,7 +211,7 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                                   place the index of the unmapped segments
                                   into the unmapped stack/sequence.*/
                                 {
-                                /* Add segment identifier into umapped stack */
+                                /* Add segment identifier into umapped stack*/
                                 uint32_t *index = malloc(sizeof(uint32_t));
 
                                 *index = (uint32_t)($r)[c];
@@ -253,12 +253,12 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                         case 12: 
                                 /*Loads next instruction to be executed.*/
                                 if(($r)[b] != 0) {
-                                        /* If value in register b is not 0 make
+                                        /*If value in register b is not 0 make
                                            a hard copy of segment identified 
                                            by the identifier stored in the 
                                            register b */
                                         UArray_T to_copy = 
-                                                (UArray_T)Seq_get($m, ($r)[b]);
+                                                (UArray_T)Seq_get($m,($r)[b]);
                                         UArray_T duplicate = 
                                                 UArray_copy
                                                 (to_copy, 
@@ -278,8 +278,8 @@ void execute_instructions(FILE** fp, Seq_T $m, Seq_T unmapped)
                                 /* Get next instruction to be executed */
                                 program_counter = 
                                         (uint32_t*) UArray_at( 
-                                                              (UArray_T)
-                                                              Seq_get($m,0), i);
+                                                        (UArray_T)
+                                                        Seq_get($m,0), i);
                                 break;     
                         case 13: 
                                 /*Load value into register a.*/
