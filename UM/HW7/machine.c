@@ -26,7 +26,25 @@ int main (int argc, char *argv[])
         execute_instructions(&fp, $m, unmapped);
 
         /* Free all memory used for instructions */
-        free_instructions($m, unmapped);
+        while(Seq_length($m) != 0) {
+                UArray_T to_delete = 
+                        (UArray_T)Seq_remhi($m);
+                if (to_delete != NULL) {
+                        UArray_free(&to_delete);
+                }
+        }
+        while (Seq_length(unmapped) != 0) {
+                uint32_t *to_delete = 
+                        (uint32_t*)Seq_remhi(unmapped);
+                if (to_delete != NULL) {
+                        free(to_delete);
+                }
+        }
+        
+        Seq_free(&$m);
+        Seq_free(&unmapped);
+        
+        /* Kills computation. */
         
         fclose(fp);
         
