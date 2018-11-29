@@ -1,0 +1,262 @@
+/*****************************************************************************
+*
+*   README
+*
+*   Jay Facultad
+*   Nathan Sahelijo
+*   COMP 40 / Fall 2018
+*   Homework 6: A Universal Machine
+*   November 19, 2018
+*
+*****************************************************************************/
+
+
+/*****************************************************************************
+*
+*   Acknowledgments
+*
+*****************************************************************************/
+
+Acknowledgment of help received during this assignment: we asked for help from 
+several of the COMP40 TA's during their office hours, and they were an 
+invaluable resource.
+
+
+/*****************************************************************************
+*
+*   What has been correctly implemented and what has not
+*
+*****************************************************************************/
+
+machine.c has been correctly designed and is successfully able to read in a
+.um file, extract the machine code instructions, and execute the operations
+in the order specified by the instructions.
+
+
+/*****************************************************************************
+*
+*   Significant departures from design
+*
+*****************************************************************************/
+
+One significant departure from our original design was the type of array to
+incorporate into our program. Our initial strategy was utilizing static C 
+arrays to represent each segment. We believed it would be simple to determine
+the size of the array from: 1) the size of the file and 2) the value passed
+to the map segment function for creating a new segment with a specified 
+number of words. We were successful in determining the size of the first array 
+loaded to Segment 0 based on the size of the file divided by the size of a 
+32-bit word and extracting the value passed to the map segment function.
+However, we found it difficult to retrieve the array stored in a specific 
+index of the Sequence since we needed to know the size of the array 
+beforehand.  This led to us revising our stategy to use Hanson uarrays instead
+to represent each segment of memory.
+
+
+/*****************************************************************************
+*
+*   Architecture
+*
+*****************************************************************************/
+
+Our program has been implemented using the uint32_t type to represent each
+word, the Hanson UArray_T type to represent segments in memory that store
+the words, the Hanson Sequence to represent the computer memory that store
+the segments, and a static C array to represent the eight 32-bit registers.
+A separate Hanson Sequence is used track the identifiers of unmapped segments.
+
+The program is modularized by having three separate modules.  The first
+module is the initial entry point of the Universal Machine program and 
+containts the main function.  The second module opens the .um file specified 
+by the run program argument and determines the number of words in the file.  A 
+Hanson uarray is instantiated using the number of words as its length, and 
+every 32-bit word is loaded into this uarray.  A Hanson sequence is then 
+instantiated and is loaded with the afformentioned uarray.  This represents 
+the initial 0th segment that holds the program.  The third module contains the 
+code to execute the instrucions from the initial 0th segment and updates the 
+registers as specified by the instructions.
+
+    ________________       _______________        ____________________
+   |                |     |               |      |                    |
+   | Load Segment 0 |<----|  int main     |<-----|  Execute Machine   |
+   |                |---->|               |----->|  Code Instructions |
+   |________________|     |_______________|      |____________________|
+     seg_zero.h              machine.c              instructions.h
+     seg_zero.c                                     instructions.c
+
+Invariants:
+The program counter does not progress beyond the length of the 0th segment.
+Bitwise manipulations only occur within the bounds of each 32-bit word.
+The number of words in the initial 0th segment is the number of instructions
+derived from the input file.
+The length of any segment is the maximum number of instructions to be executed 
+for that segment.
+Every word is identified by a segment identifier and offset identifier, and
+vice versa (Each segment identifier and offset identifier corresponds to
+a word).
+The 4 most significant bits of a word corresponds to a specific operation,
+and vice versa (Each operation has an associated 4 bit representation).
+Each register is identified by 3 bits, and vice versa.
+
+
+/*****************************************************************************
+*
+*   Performace
+*
+*****************************************************************************/
+
+Benchmark midmark.um:
+    Number of instructions: 30109
+    2.249u 0.003s 0:02:25
+    instructions / second = (30109 instructions) / (2.25 seconds)
+    instructions / second =  13382 instructions / second
+
+Benchmark sandmark.umz:
+    Number of instructions: 11420
+    56.218u 0.001s 0:56:22 
+    instructions / second = (11420 instructions) / (56.22 seconds)
+    instructions / second =  203 instructions / second
+
+Using the results from above, we can crudly calculate the estimate time it 
+would take to execute 50 million instructions.  The following formula can be 
+used (however, with a caveat as explained below):
+
+AVERAGE = 
+    ( (instructions/sec for midmark) + (instructions/sec for sandmark) ) / 2 =
+    ( (13382 instructions / second) + (203 instructions / second) ) / 2 =
+    ( 6793 instructions / second )
+TIME FOR 50 MILLION INSTRUCTIONS = 
+    50,000,000 / AVERAGE =
+    50,000,000 / ( 6793 instructions / second ) =
+    7,360 seconds = 122 minutes = 2 hours
+
+However, this calculation is inaccurate because the work performed depends
+on the complexity of the instruction.  For example, a load program instruction
+is more computationally intensive than a conditional move instruction.  
+Another example is that an add instruction requires fewer resources than
+a map function.
+
+
+/*****************************************************************************
+*
+*   UM unit tests (from UMTESTS file)
+*
+*****************************************************************************/
+
+All 14 instructions were tested using the following unit test files: 
+
+add.um
+    This unit test confirms the correct functionality of the load value (op 
+    code 13), output (op code 10), and addition (op code 3) instructions by 
+    loading the value 70 to one register and the value 4 to another register, 
+    adding the values of the loaded registers and storing the result in a 
+    separate regsiter, and finally outputting this value. The ouput must be 
+    the character 'J' (since 70 + 4 = 74, and 74 is the ASCII code for 'J').
+
+divide.um
+    Tests the load value, output, and divide (op code 5) instructions by
+    loading the value 148 to one register and the value 2 to another, dividing
+    the value in the first by the value in the second and storing the result 
+    in a separate register, and finally outputting this value. The output 
+    must be the character 'J' (since 148 / 2 = 74, and 74 is the ASCII code 
+    for 'J').
+
+input-output.um (requires input and output files)
+    Confirms that the input (op code 11) and output (op code 10) instructions
+    by inputting a character from a input text file and outputting this
+    character to an output text file.  The value in both files must be an
+    exact match.
+
+multiply.um
+    Tests the load value, output, and multiply (op code 5) instructions by
+    loading the value 37 to one register and the value 2 to another, 
+    multiplying the value in the first by the value in the second and storing 
+    the result in a separate register, and outputting this value. The output 
+    must be the character 'J' (since 37 * 2= 74, and 74 is the ASCII code 
+    for 'J').
+
+nand.um
+    Confirms that the Bitwise NAND (op code 6) instruction is correct. There
+    are three tests included in the file.  First, the value of 7 is loaded 
+    to two different registers. The bitwise representation for 7 is
+    00000000000000000000000000000111.  The NAND operation for these two
+    registers must subsequently yield 11111111111111111111111111111000,
+    which in decimal is 4,294,967,288. The second test involves loading the
+    value of 0 to two different registers.  The NAND operation for these two 
+    must therefore yield a 32-bit bitfield of all 1's, which in decimal is 
+    4,294,967,295.  The third test involves loading one register with the 
+    maximum decimal value for 25 bits (since the format of the word loadval
+    only has 25 bits to represent the value), which is 33554431 in decimal and
+    00000001111111111111111111111111 in bits, and loading another register
+    33554431 - 1, which is 00000001111111111111111111111110 in bits.  The
+    NAND instruction therefore must yield 4261412865, which is 
+    11111110000000000000000000000001 in bits.
+
+map-load-store.um
+    Confirms the map (op code 8), segment store (op code 2), and segment load 
+    (op code 1) instructions by loading 5 .egisters with the following values:
+    - 2 for the new segment length.
+    - 1 for segment identifier as well as offset identifier.
+    - 0 for an offset identifier.
+    - 75 for a test value to be loaded in offset 0
+    - 74 for a second test value to be loaded in offset 1.
+    The map segment operation is invoked using the value of the first register
+    for the segment length (2).  The segment store operation is invoked twice 
+    to load the two offets (offset 0 and 1) from segment identifier (1).
+    Finally, the segment load operation is invoked once to load an aribtrary
+    register from segment identifier (1) and offset identifier (1). The result
+    must be 74.
+
+unmap.um
+    Tests the unmap (op code 9) instruction by first mapping a new segment of
+    length 2 and storing values (characters K and J) in the new segment.  Then, 
+    the test proceeds to invoke the unmap instruction on the afformentioned 
+    segment, followed by another mapping of a new segment of length 2. This 
+    new segment will be loaded with different values (characters P and Q) in 
+    its offsets. Then, the values from this new segment are outputted  This 
+    test should print the values from the new segment and not from the
+    unmapped segment.
+
+verbose-halt.um
+    Tests the halt (op code 7) instruction by creating a .um file containing
+    a halt instruction followed by loadval and output functions.  The test
+    should not print any of the values since halt is invoked first, which
+    stops the program.
+
+cond-mov.um
+    Confirms the functionality of the conditional move (op code 0) instruction
+    using two tests. First, a register is loaded with a test value to be 
+    loaded to separate register. Then a value of 0 is loaded to a register 
+    that will hold the conditional value.  The conditional move instruction is 
+    invoked with the conditional value of 0. This test should result in (no)
+    loading of the test value to the resgister.  The second test loads a value
+    of 1 to the register that holds the conditional value.  The conditional
+    move instruction is invoked with the conditional value of 1. This test
+    should result in the successful loading of the test value to the register.
+
+loadprog.um
+    Confirms the successful functionality of the load program (op code 12)
+    by first mapping a new segment of a sepcified size and loading each offset
+    with a succession of words of a specified sequence of instructions. The
+    load function operation is invoked to replace segment 0 with a 
+    duplicate of the afformentioned segment, and changing the program counter
+    to point to the specified offsent in segment 0. This must cause the 
+    program to execute the instructions from the specified series of 
+    instrucitons.
+
+nohalt.um
+    Confirms that the program completes if the machine instructions do not
+    include a halt function.  The test referenced in add.um above is 
+    duplicated however the halt operation is removed. The test is confirmed if 
+    the test does not result in an infinite loop.
+
+
+/*****************************************************************************
+*
+*   Time spent on assignment
+*
+*****************************************************************************/
+
+Approximately 4.5 hours were spent analying the assignment.  
+Approximately 8 hours were spent preparing the design.
+Approximately 16.5 hours were spent solving the problems after analysis.

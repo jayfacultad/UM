@@ -1,0 +1,11 @@
+add.um
+divide.um
+input-output.um 
+multiply.um
+nand.um
+map-load-store.um
+unmap.um
+verbose-halt.um
+cond-mov.um
+loadprog.um
+nohalt.um
